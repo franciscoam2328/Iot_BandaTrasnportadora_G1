@@ -13,3 +13,4 @@ commit;
 alter publication supabase_realtime add table sistema;
 alter publication supabase_realtime add table turnos;
 alter publication supabase_realtime add table lecturas;
+alter publication supabase_realtime add table sesiones;

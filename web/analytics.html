@@ -8,6 +8,8 @@
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
     <link href="https://fonts.googleapis.com" rel="preconnect" />
     <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect" />
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&amp;display=swap" rel="stylesheet" />
@@ -89,6 +91,11 @@
                             </p>
                         </div>
                         <div class="flex items-center gap-2">
+                            <button onclick="exportToPDF()"
+                                class="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors">
+                                <span class="material-symbols-outlined text-sm">picture_as_pdf</span>
+                                Export PDF
+                            </button>
                             <label for="date-picker"
                                 class="text-sm font-medium text-slate-700 dark:text-slate-300">Date:</label>
                             <input type="date" id="date-picker"
@@ -433,6 +440,51 @@
                     }
                 }
             });
+        }
+
+        function exportToPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            const date = datePicker.value;
+
+            // Title
+            doc.setFontSize(18);
+            doc.text(`Reporte de Producción - ${date}`, 14, 20);
+
+            // Summary
+            doc.setFontSize(12);
+            doc.text(`Total Procesado: ${totalProductsEl.textContent}`, 14, 30);
+            doc.text(`Rojo: ${totalRedEl.textContent}`, 14, 36);
+            doc.text(`Verde: ${totalGreenEl.textContent}`, 14, 42);
+            doc.text(`Azul: ${totalBlueEl.textContent}`, 14, 48);
+
+            // Sessions Table
+            doc.text("Registro de Sesiones", 14, 60);
+            doc.autoTable({
+                startY: 65,
+                head: [['Turno', 'Inicio', 'Fin', 'Rojo', 'Verde', 'Azul', 'Total']],
+                body: Array.from(sessionsTableBody.querySelectorAll('tr')).map(row => {
+                    return Array.from(row.querySelectorAll('td')).map(cell => cell.innerText);
+                }),
+                theme: 'grid',
+                headStyles: { fillColor: [43, 124, 238] }
+            });
+
+            // Detections Table
+            const finalY = doc.lastAutoTable.finalY || 65;
+            doc.text("Detecciones Recientes (Últimas 50)", 14, finalY + 15);
+            doc.autoTable({
+                startY: finalY + 20,
+                head: [['Color', 'Turno', 'Hora']],
+                body: Array.from(logTableBody.querySelectorAll('tr')).map(row => {
+                    return Array.from(row.querySelectorAll('td')).map(cell => cell.innerText);
+                }),
+                theme: 'striped',
+                headStyles: { fillColor: [43, 124, 238] }
+            });
+
+            // Save
+            doc.save(`Reporte_Produccion_${date}.pdf`);
         }
 
         init();
