@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html class="light" lang="es">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>UPAO - Grupo 1 - IoT</title>
+    <link href="https://fonts.googleapis.com" rel="preconnect" />
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect" />
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;display=swap"
+        rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
+        rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#2b7cee",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#101822",
+                        "accent-red": "#D90429",
+                        "accent-green": "#00A878",
+                        "accent-blue": "#3A86FF",
+                        "text-dark": "#0d131b",
+                        "text-light": "#f6f7f8",
+                        "border-light": "#cfd9e7",
+                        "border-dark": "#334155",
+                        "card-light": "#ffffff",
+                        "card-dark": "#1e293b",
+                        "muted-light": "#64748b",
+                        "muted-dark": "#94a3b8"
+                    },
+                    fontFamily: {
+                        "display": ["Manrope", "sans-serif"]
+                    },
+                    borderRadius: { "DEFAULT": "0.5rem", "lg": "0.75rem", "xl": "1rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+</head>
+
+<body class="font-display bg-background-light dark:bg-background-dark text-text-dark dark:text-text-light">
+    <div class="relative flex h-auto min-h-screen w-full flex-col">
+        <div class="flex h-full grow flex-col">
+            <div class="mx-auto w-full max-w-7xl flex-1 px-4 py-8 sm:px-6 lg:px-8">
+                <div class="flex flex-col gap-8">
+                    <header
+                        class="flex items-center justify-between whitespace-nowrap border-b border-solid border-border-light dark:border-border-dark pb-4">
+                        <div class="flex items-center gap-4">
+                            <div class="text-primary size-8">
+                                <svg fill="none" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M6 6H42L36 24L42 42H6L12 24L6 6Z" fill="currentColor"></path>
+                                </svg>
+                            </div>
+                            <h1 class="text-xl font-bold tracking-tight sm:text-2xl">UPAO - Grupo 1 - IoT</h1>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <a class="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                                href="analytics.html">
+                                <span class="material-symbols-outlined text-base">monitoring</span>
+                                <span>Analytics</span>
+                            </a>
+                            <button
+                                class="flex h-10 w-10 cursor-pointer items-center justify-center overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700 text-text-dark dark:text-text-light">
+                                <span class="material-symbols-outlined text-2xl">person</span>
+                            </button>
+                        </div>
+                    </header>
+                    <main class="grid grid-cols-1 gap-8 lg:grid-cols-3">
+                        <div class="flex flex-col gap-8 lg:col-span-2">
+                            <section
+                                class="grid grid-cols-1 gap-6 rounded-lg bg-card-light dark:bg-card-dark p-6 shadow-sm sm:grid-cols-2">
+                                <div
+                                    class="flex items-center justify-between rounded-lg border border-border-light dark:border-border-dark p-4">
+                                    <div class="flex items-center gap-4">
+                                        <div
+                                            class="flex items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-700 size-12 shrink-0">
+                                            <span
+                                                class="material-symbols-outlined text-3xl text-muted-light dark:text-muted-dark">power_settings_new</span>
+                                        </div>
+                                        <p class="text-base font-medium">Cinta Transportadora</p>
+                                    </div>
+                                    <div class="shrink-0">
+                                        <label
+                                            class="relative flex h-[31px] w-[51px] cursor-pointer items-center rounded-full p-0.5 has-[:checked]:justify-end has-[:checked]:bg-primary bg-slate-200 dark:bg-slate-600 dark:has-[:checked]:bg-primary">
+                                            <div class="h-full w-[27px] rounded-full bg-white transition-transform"
+                                                style="box-shadow: rgba(0, 0, 0, 0.15) 0px 3px 8px, rgba(0, 0, 0, 0.06) 0px 3px 1px;">
+                                            </div>
+                                            <input id="system-toggle" class="invisible absolute" type="checkbox" />
+                                        </label>
+                                    </div>
+                                </div>
+                                <div
+                                    class="flex flex-col gap-4 rounded-lg border border-border-light dark:border-border-dark p-4">
+                                    <h4
+                                        class="text-sm font-semibold text-muted-light dark:text-muted-dark uppercase tracking-wider">
+                                        Control de Turno</h4>
+
+                                    <!-- Selector de Turno (Solo visible si NO hay sesión activa) -->
+                                    <div id="shift-selector-container"
+                                        class="flex h-10 w-full items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800 p-1">
+                                        <label
+                                            class="flex h-full grow cursor-pointer items-center justify-center rounded-md px-2 text-sm font-medium transition-all has-[:checked]:bg-white dark:has-[:checked]:bg-slate-700 has-[:checked]:shadow-sm">
+                                            <span>Turno 1</span>
+                                            <input class="invisible w-0" name="shift-selector" type="radio"
+                                                value="turno1" checked />
+                                        </label>
+                                        <label
+                                            class="flex h-full grow cursor-pointer items-center justify-center rounded-md px-2 text-sm font-medium transition-all has-[:checked]:bg-white dark:has-[:checked]:bg-slate-700 has-[:checked]:shadow-sm">
+                                            <span>Turno 2</span>
+                                            <input class="invisible w-0" name="shift-selector" type="radio"
+                                                value="turno2" />
+                                        </label>
+                                        <label
+                                            class="flex h-full grow cursor-pointer items-center justify-center rounded-md px-2 text-sm font-medium transition-all has-[:checked]:bg-white dark:has-[:checked]:bg-slate-700 has-[:checked]:shadow-sm">
+                                            <span>Turno 3</span>
+                                            <input class="invisible w-0" name="shift-selector" type="radio"
+                                                value="turno3" />
+                                        </label>
+                                    </div>
+
+                                    <!-- Botones de Acción -->
+                                    <div class="grid grid-cols-1 gap-3">
+                                        <button id="btn-start-shift"
+                                            class="flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-bold text-white shadow-md hover:bg-primary/90 active:scale-95 transition-all">
+                                            <span class="material-symbols-outlined">play_arrow</span>
+                                            Iniciar Turno
+                                        </button>
+                                        <button id="btn-end-shift"
+                                            class="hidden flex items-center justify-center gap-2 rounded-lg bg-accent-red px-4 py-2.5 text-sm font-bold text-white shadow-md hover:bg-accent-red/90 active:scale-95 transition-all">
+                                            <span class="material-symbols-outlined">stop</span>
+                                            Terminar Turno
+                                        </button>
+                                    </div>
+
+                                    <!-- Info de Sesión Activa -->
+                                    <div id="session-info" class="hidden flex flex-col gap-1 text-center mt-2">
+                                        <p class="text-xs text-muted-light dark:text-muted-dark">Sesión Activa:</p>
+                                        <p id="session-timer" class="text-xl font-mono font-bold text-primary">00:00:00
+                                        </p>
+                                    </div>
+                                </div>
+                            </section>
+                            <section>
+                                <h3 class="px-1 pb-2 pt-0 text-lg font-bold leading-tight tracking-tight">Contadores de
+                                    Objetos</h3>
+                                <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                                    <div
+                                        class="flex flex-col gap-2 rounded-lg p-6 bg-card-light dark:bg-card-dark shadow-sm border-l-4 border-accent-red">
+                                        <div class="flex items-center gap-3">
+                                            <span class="material-symbols-outlined text-accent-red">lens</span>
+                                            <p class="text-base font-semibold">Objetos Rojos</p>
+                                        </div>
+                                        <p id="count-red" class="text-4xl font-bold tracking-tight">0</p>
+                                    </div>
+                                    <div
+                                        class="flex flex-col gap-2 rounded-lg p-6 bg-card-light dark:bg-card-dark shadow-sm border-l-4 border-accent-green">
+                                        <div class="flex items-center gap-3">
+                                            <span class="material-symbols-outlined text-accent-green">lens</span>
+                                            <p class="text-base font-semibold">Objetos Verdes</p>
+                                        </div>
+                                        <p id="count-green" class="text-4xl font-bold tracking-tight">0</p>
+                                    </div>
+                                    <div
+                                        class="flex flex-col gap-2 rounded-lg p-6 bg-card-light dark:bg-card-dark shadow-sm border-l-4 border-accent-blue">
+                                        <div class="flex items-center gap-3">
+                                            <span class="material-symbols-outlined text-accent-blue">lens</span>
+                                            <p class="text-base font-semibold">Objetos Azules</p>
+                                        </div>
+                                        <p id="count-blue" class="text-4xl font-bold tracking-tight">0</p>
+                                    </div>
+                                </div>
+                            </section>
+                            <section>
+                                <h3 class="px-1 pb-2 pt-0 text-lg font-bold leading-tight tracking-tight">Últimas 10
+                                    Detecciones</h3>
+                                <div class="overflow-hidden rounded-lg bg-card-light dark:bg-card-dark shadow-sm">
+                                    <div class="overflow-x-auto">
+                                        <table class="w-full text-left text-sm">
+                                            <thead class="bg-slate-50 dark:bg-slate-800">
+                                                <tr>
+                                                    <th
+                                                        class="px-6 py-3 font-semibold uppercase tracking-wider text-muted-light dark:text-muted-dark">
+                                                        Hora</th>
+                                                    <th
+                                                        class="px-6 py-3 font-semibold uppercase tracking-wider text-muted-light dark:text-muted-dark">
+                                                        Color Detectado</th>
+                                                    <th
+                                                        class="px-6 py-3 font-semibold uppercase tracking-wider text-muted-light dark:text-muted-dark">
+                                                        Turno</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="detections-table"
+                                                class="divide-y divide-border-light dark:divide-border-dark">
+                                                <!-- Rows will be injected here -->
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </section>
+                        </div>
+                        <aside class="flex flex-col gap-6 lg:col-span-1">
+                            <div class="rounded-lg bg-card-light dark:bg-card-dark p-6 shadow-sm">
+                                <h3 class="mb-4 text-lg font-bold">Estado Actual del Sistema</h3>
+                                <div class="space-y-5">
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex items-center gap-3">
+                                            <span
+                                                class="material-symbols-outlined text-muted-light dark:text-muted-dark">precision_manufacturing</span>
+                                            <span class="font-medium">Estado del Motor</span>
+                                        </div>
+                                        <span id="motor-status-badge"
+                                            class="inline-flex items-center rounded-full bg-slate-200 px-3 py-1 text-sm font-semibold text-slate-500">OFF</span>
+                                    </div>
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex items-center gap-3">
+                                            <span
+                                                class="material-symbols-outlined text-muted-light dark:text-muted-dark">palette</span>
+                                            <span class="font-medium">Último Color</span>
+                                        </div>
+                                        <span id="last-color" class="font-semibold">-</span>
+                                    </div>
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex items-center gap-3">
+                                            <span
+                                                class="material-symbols-outlined text-muted-light dark:text-muted-dark">speed</span>
+                                            <span class="font-medium">Velocidad Estimada</span>
+                                        </div>
+                                        <span class="font-semibold">1.2 m/s</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </aside>
+                    </main>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Supabase Config ---
+        const SUPABASE_URL = 'https://evorufjkfqmqmjhdpxeo.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV2b3J1ZmprZnFtcW1qaGRweGVvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3Njc1NTgsImV4cCI6MjA3OTM0MzU1OH0.ewTwn9B7cj_5ibr12UiMxxhd0sM5CTRfCF4IiepCJrI';
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        // --- DOM Elements ---
+        const systemToggle = document.getElementById('system-toggle'); // Hidden now, controlled by logic
+        const shiftRadios = document.getElementsByName('shift-selector');
+        const shiftSelectorContainer = document.getElementById('shift-selector-container');
+        const btnStartShift = document.getElementById('btn-start-shift');
+        const btnEndShift = document.getElementById('btn-end-shift');
+        const sessionInfo = document.getElementById('session-info');
+        const sessionTimer = document.getElementById('session-timer');
+
+        const countRed = document.getElementById('count-red');
+        const countGreen = document.getElementById('count-green');
+        const countBlue = document.getElementById('count-blue');
+        const detectionsTable = document.getElementById('detections-table');
+        const motorStatusBadge = document.getElementById('motor-status-badge');
+        const lastColorEl = document.getElementById('last-color');
+
+        let currentTurn = 'turno1';
+        let currentSessionId = null;
+        let sessionStartTime = null;
+        let timerInterval = null;
+
+        // --- Init ---
+        async function init() {
+            // 1. Get Initial System State
+            const { data: sysData } = await supabaseClient.from('sistema').select('*').single();
+            if (sysData) {
+                updateSystemUI(sysData.encendido);
+                currentTurn = sysData.turno_actual;
+                updateTurnUI(currentTurn);
+
+                // Check if there is an open session for this turn
+                await checkActiveSession();
+            }
+
+            // 2. Get Initial Counts
+            fetchCounts();
+
+            // 3. Get Recent Detections
+            fetchRecentDetections();
+
+            // 4. Subscribe to Changes
+            supabaseClient.channel('public:sistema')
+                .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'sistema' }, payload => {
+                    updateSystemUI(payload.new.encendido);
+                    if (payload.new.turno_actual !== currentTurn) {
+                        currentTurn = payload.new.turno_actual;
+                        updateTurnUI(currentTurn);
+                        // If turn changes, re-check session and counts
+                        checkActiveSession().then(() => fetchCounts());
+                    }
+                })
+                .subscribe();
+
+            supabaseClient.channel('public:turnos')
+                .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'turnos' }, payload => {
+                    // Only update from 'turnos' if NO active session
+                    if (!currentSessionId && payload.new.turno === currentTurn) {
+                        updateCountsUI({
+                            rojo: payload.new.rojo,
+                            verde: payload.new.verde,
+                            azul: payload.new.azul
+                        });
+                    }
+                })
+                .subscribe();
+
+            supabaseClient.channel('public:sesiones')
+                .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'sesiones' }, payload => {
+                    // Update if this is the active session
+                    if (currentSessionId && payload.new.id === currentSessionId) {
+                        updateCountsUI({
+                            rojo: payload.new.total_rojo,
+                            verde: payload.new.total_verde,
+                            azul: payload.new.total_azul
+                        });
+                    }
+                })
+                .subscribe();
+
+            supabaseClient.channel('public:lecturas')
+                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'lecturas' }, payload => {
+                    addDetectionRow(payload.new);
+                    lastColorEl.textContent = payload.new.color;
+                })
+                .subscribe();
+        }
+
+        // --- Session Logic ---
+        async function checkActiveSession() {
+            // Look for a session that has no 'fin' time
+            const { data: session } = await supabaseClient
+                .from('sesiones')
+                .select('*')
+                .is('fin', null)
+                .order('inicio', { ascending: false })
+                .limit(1)
+                .single();
+
+            if (session) {
+                currentSessionId = session.id;
+                sessionStartTime = new Date(session.inicio);
+                setSessionActiveUI(true);
+            } else {
+                setSessionActiveUI(false);
+            }
+        }
+
+        async function startShift() {
+            const selectedTurn = Array.from(shiftRadios).find(r => r.checked).value;
+
+            // 1. Create Session
+            const { data, error } = await supabaseClient
+                .from('sesiones')
+                .insert([{ turno: selectedTurn }])
+                .select()
+                .single();
+
+            if (data) {
+                currentSessionId = data.id;
+                sessionStartTime = new Date(data.inicio);
+
+                // 2. Turn ON System & Set Turn
+                await supabaseClient.from('sistema').update({ encendido: true, turno_actual: selectedTurn }).eq('id', 1);
+
+                setSessionActiveUI(true);
+            }
+        }
+
+        async function endShift() {
+            if (!currentSessionId) return;
+
+            // 1. Close Session
+            await supabaseClient
+                .from('sesiones')
+                .update({
+                    fin: new Date().toISOString(),
+                    // Optionally update totals here if we were tracking them locally
+                })
+                .eq('id', currentSessionId);
+
+            // 2. Turn OFF System
+            await supabaseClient.from('sistema').update({ encendido: false }).eq('id', 1);
+
+            currentSessionId = null;
+            sessionStartTime = null;
+            setSessionActiveUI(false);
+        }
+
+        function setSessionActiveUI(isActive) {
+            if (isActive) {
+                btnStartShift.classList.add('hidden');
+                btnEndShift.classList.remove('hidden');
+                shiftSelectorContainer.classList.add('pointer-events-none', 'opacity-50'); // Disable changing turn during session
+                sessionInfo.classList.remove('hidden');
+                startTimer();
+            } else {
+                btnStartShift.classList.remove('hidden');
+                btnEndShift.classList.add('hidden');
+                shiftSelectorContainer.classList.remove('pointer-events-none', 'opacity-50');
+                sessionInfo.classList.add('hidden');
+                stopTimer();
+            }
+        }
+
+        function startTimer() {
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                if (!sessionStartTime) return;
+                const now = new Date();
+                const diff = now - sessionStartTime;
+                const hh = Math.floor(diff / 3600000).toString().padStart(2, '0');
+                const mm = Math.floor((diff % 3600000) / 60000).toString().padStart(2, '0');
+                const ss = Math.floor((diff % 60000) / 1000).toString().padStart(2, '0');
+                sessionTimer.textContent = `${hh}:${mm}:${ss}`;
+            }, 1000);
+        }
+
+        function stopTimer() {
+            if (timerInterval) clearInterval(timerInterval);
+            sessionTimer.textContent = "00:00:00";
+        }
+
+        // --- UI Updates ---
+        function updateSystemUI(isOn) {
+            // systemToggle.checked = isOn; // Removed direct toggle control
+            if (isOn) {
+                motorStatusBadge.className = "inline-flex items-center rounded-full bg-accent-green/10 px-3 py-1 text-sm font-semibold text-accent-green";
+                motorStatusBadge.textContent = "ON";
+            } else {
+                motorStatusBadge.className = "inline-flex items-center rounded-full bg-slate-200 px-3 py-1 text-sm font-semibold text-slate-500";
+                motorStatusBadge.textContent = "OFF";
+            }
+        }
+
+        function updateTurnUI(turn) {
+            for (const radio of shiftRadios) {
+                if (radio.value === turn) {
+                    radio.checked = true;
+                }
+            }
+        }
+
+        function updateCountsUI(data) {
+            countRed.textContent = data.rojo;
+            countGreen.textContent = data.verde;
+            countBlue.textContent = data.azul;
+        }
+
+        async function fetchCounts() {
+            if (currentSessionId) {
+                // Fetch from active session
+                const { data } = await supabaseClient.from('sesiones').select('*').eq('id', currentSessionId).single();
+                if (data) {
+                    updateCountsUI({
+                        rojo: data.total_rojo,
+                        verde: data.total_verde,
+                        azul: data.total_azul
+                    });
+                }
+            } else {
+                // Fetch global turn counts
+                const { data } = await supabaseClient.from('turnos').select('*').eq('turno', currentTurn).single();
+                if (data) {
+                    updateCountsUI({
+                        rojo: data.rojo,
+                        verde: data.verde,
+                        azul: data.azul
+                    });
+                }
+            }
+        }
+
+        async function fetchRecentDetections() {
+            const { data } = await supabaseClient.from('lecturas')
+                .select('*')
+                .order('created_at', { ascending: false })
+                .limit(10);
+
+            if (data) {
+                detectionsTable.innerHTML = '';
+                data.forEach(addDetectionRow);
+                if (data.length > 0) {
+                    lastColorEl.textContent = data[0].color;
+                }
+            }
+        }
+
+        function addDetectionRow(lectura) {
+            const date = new Date(lectura.created_at);
+            const timeStr = date.toLocaleTimeString();
+
+            let colorDotClass = "bg-gray-500";
+            if (lectura.color === 'ROJO') colorDotClass = "bg-accent-red";
+            if (lectura.color === 'VERDE') colorDotClass = "bg-accent-green";
+            if (lectura.color === 'AZUL') colorDotClass = "bg-accent-blue";
+
+            const row = `
+            <tr>
+                <td class="whitespace-nowrap px-6 py-4">${timeStr}</td>
+                <td class="whitespace-nowrap px-6 py-4">
+                    <div class="flex items-center gap-2">
+                        <span class="inline-block h-3 w-3 rounded-full ${colorDotClass}"></span>
+                        <span>${lectura.color}</span>
+                    </div>
+                </td>
+                <td class="whitespace-nowrap px-6 py-4">${lectura.turno}</td>
+            </tr>
+        `;
+            detectionsTable.insertAdjacentHTML('afterbegin', row);
+            if (detectionsTable.children.length > 10) {
+                detectionsTable.lastElementChild.remove();
+            }
+        }
+
+        // --- Event Listeners ---
+        btnStartShift.addEventListener('click', startShift);
+        btnEndShift.addEventListener('click', endShift);
+
+        // Removed direct toggle listener and radio listeners as they are now controlled by Start/End Shift logic
+        // But we might want to update the 'turno_actual' locally if user clicks radio BEFORE starting shift?
+        // Yes, let's allow selecting turn before starting.
+        for (const radio of shiftRadios) {
+            radio.addEventListener('change', (e) => {
+                // Just update local variable, don't send to DB until Start Shift
+                // Or maybe we do nothing and just read the checked radio on Start
+            });
+        }
+
+        init();
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,5 @@
+{
+  "appId": "com.upao.iot.control",
+  "appName": "IoT Control",
+  "webDir": "dist"
+}
