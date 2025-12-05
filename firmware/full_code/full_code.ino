@@ -1,20 +1,21 @@
 #include <WiFi.h>
 #include <HTTPClient.h>
-#include <ArduinoJson.h>
+#include <ArduinoJson.h> // Asegúrate de instalar la librería "ArduinoJson" desde el Gestor de Librerías
 
 // ==========================================
-// CONFIGURATION (from config.h)
+// CONFIGURACIÓN
 // ==========================================
 
-// --- WiFi Credentials ---
-const char* ssid = "YOUR_WIFI_SSID";
-const char* password = "YOUR_WIFI_PASSWORD";
+// --- Credenciales WiFi ---
+// REEMPLAZA CON TU RED Y CONTRASEÑA REALES
+const char* ssid = "TU_RED_WIFI"; 
+const char* password = "TU_CONTRASEÑA_WIFI";
 
-// --- Supabase Credentials ---
+// --- Credenciales Supabase ---
 const char* supabase_url = "https://evorufjkfqmqmjhdpxeo.supabase.co";
 const char* supabase_key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV2b3J1ZmprZnFtcW1qaGRweGVvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3Njc1NTgsImV4cCI6MjA3OTM0MzU1OH0.ewTwn9B7cj_5ibr12UiMxxhd0sM5CTRfCF4IiepCJrI";
 
-// --- Pin Definitions ---
+// --- Definición de Pines ---
 // Sensor de Color (TCS230/TCS3200)
 #define S0 18
 #define S1 19
@@ -25,21 +26,22 @@ const char* supabase_key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXB
 // Sensor de Objetos (FC-51)
 #define SENSOR_OBJETO_PIN 32
 
-// Motor DC (Puente H)
+// Motor DC (Puente H - L9110S o similar)
 #define MOTOR_IN1 26
 #define MOTOR_IN2 27
 
 // ==========================================
-// MAIN LOGIC (from main.ino)
+// VARIABLES GLOBALES
 // ==========================================
 
-// --- Variables de Estado ---
 bool sistemaEncendido = false;
 String turnoActual = "turno1";
 unsigned long lastCheckTime = 0;
 const unsigned long checkInterval = 2000; // Consultar estado cada 2s
 
-// --- Prototipos de Funciones ---
+// ==========================================
+// PROTOTIPOS
+// ==========================================
 void connectWiFi();
 void checkSystemStatus();
 void controlMotor(bool on);
@@ -47,6 +49,9 @@ void readColorAndAct();
 String detectColor();
 void sendDataToSupabase(String color);
 
+// ==========================================
+// SETUP
+// ==========================================
 void setup() {
   Serial.begin(115200);
 
@@ -61,52 +66,80 @@ void setup() {
   pinMode(MOTOR_IN1, OUTPUT);
   pinMode(MOTOR_IN2, OUTPUT);
 
-  // Configurar Escala de Frecuencia del Sensor (20%)
+  // Configurar Escala de Frecuencia del Sensor de Color (20%)
   digitalWrite(S0, HIGH);
   digitalWrite(S1, LOW);
 
+  // Iniciar WiFi
   connectWiFi();
 }
 
+// ==========================================
+// LOOP PRINCIPAL
+// ==========================================
 void loop() {
-  // Verificar conexión WiFi
+  // 1. Verificar conexión WiFi y reconectar si es necesario
   if (WiFi.status() != WL_CONNECTED) {
     connectWiFi();
   }
 
-  // Consultar estado del sistema periódicamente
+  // 2. Consultar estado del sistema periódicamente (Polling)
   if (millis() - lastCheckTime > checkInterval) {
     checkSystemStatus();
     lastCheckTime = millis();
   }
 
+  // 3. Lógica de Control
   if (sistemaEncendido) {
     controlMotor(true);
-    // Leer sensor de objetos (FC-51 suele ser LOW cuando detecta)
+    
+    // Leer sensor de objetos (FC-51 suele dar LOW cuando detecta obstáculo)
     if (digitalRead(SENSOR_OBJETO_PIN) == LOW) {
+       Serial.println("Objeto detectado! Iniciando lectura de color...");
+       
+       // Pequeña pausa para estabilizar objeto frente al sensor de color
+       delay(500); 
+       
        readColorAndAct();
-       // Pequeño debounce o espera para no leer el mismo objeto múltiples veces
+       
+       // Evitar múltiples lecturas del mismo objeto
        delay(1000); 
     }
   } else {
     controlMotor(false);
   }
   
-  delay(100);
+  delay(100); // Pequeño delay para no saturar el loop
 }
 
+// ==========================================
+// FUNCIONES AUXILIARES
+// ==========================================
+
 void connectWiFi() {
-  Serial.print("Conectando a WiFi...");
+  Serial.print("Conectando a WiFi: ");
+  Serial.println(ssid);
   WiFi.begin(ssid, password);
-  while (WiFi.status() != WL_CONNECTED) {
+  
+  int intentos = 0;
+  while (WiFi.status() != WL_CONNECTED && intentos < 20) {
     delay(500);
     Serial.print(".");
+    intentos++;
   }
-  Serial.println(" Conectado!");
+  
+  if (WiFi.status() == WL_CONNECTED) {
+    Serial.println("\nWiFi Conectado!");
+    Serial.print("IP: ");
+    Serial.println(WiFi.localIP());
+  } else {
+    Serial.println("\nFallo al conectar WiFi.");
+  }
 }
 
 void checkSystemStatus() {
   HTTPClient http;
+  // Consultamos solo los campos necesarios
   String url = String(supabase_url) + "/rest/v1/sistema?select=encendido,turno_actual&limit=1";
   
   http.begin(url);
@@ -135,14 +168,15 @@ void checkSystemStatus() {
         turnoActual = String(nuevoTurno);
       }
       
-      // Serial.print("Estado: "); Serial.print(sistemaEncendido);
-      // Serial.print(" Turno: "); Serial.println(turnoActual);
+      // Debug opcional
+      // Serial.print("Estado Remoto: "); Serial.println(sistemaEncendido ? "ON" : "OFF");
     } else {
-      Serial.print("deserializeJson() failed: ");
+      Serial.print("Error JSON: ");
       Serial.println(error.c_str());
     }
   } else {
-    Serial.println("Error en HTTP GET");
+    Serial.print("Error HTTP GET: ");
+    Serial.println(httpCode);
   }
   http.end();
 }
@@ -158,52 +192,64 @@ void controlMotor(bool on) {
 }
 
 void readColorAndAct() {
+  // 1. Esperar un poco para que el objeto llegue justo debajo del sensor de color
+  // (Ajusta este valor según la velocidad de tu motor y la distancia entre sensores)
+  delay(400); 
+  
+  // 2. Detectar Color (Promediando lecturas para mayor precisión)
   String color = detectColor();
   
   if (color != "UNKNOWN") {
-    Serial.println("Color Detectado: " + color);
-    
-    // 1. Detener motor momentáneamente para precisión (opcional)
-    controlMotor(false);
-    delay(500);
-    
-    // 2. Enviar a Supabase
+    Serial.println("Color Confirmado: " + color);
     sendDataToSupabase(color);
-    
-    // 3. Reanudar motor
-    controlMotor(true);
+  } else {
+    Serial.println("Color Desconocido / Lectura inestable");
   }
+  
+  // Evitar re-lecturas inmediatas del mismo objeto
+  delay(500);
 }
 
 String detectColor() {
-  // Leer Rojo
-  digitalWrite(S2, LOW);
-  digitalWrite(S3, LOW);
-  int redPW = pulseIn(SENSOR_OUT, LOW);
-  delay(10);
-  
-  // Leer Verde
-  digitalWrite(S2, HIGH);
-  digitalWrite(S3, HIGH);
-  int greenPW = pulseIn(SENSOR_OUT, LOW);
-  delay(10);
-  
-  // Leer Azul
-  digitalWrite(S2, LOW);
-  digitalWrite(S3, HIGH);
-  int bluePW = pulseIn(SENSOR_OUT, LOW);
-  delay(10);
+  long totalR = 0, totalG = 0, totalB = 0;
+  int muestras = 5; // Tomar 5 muestras para promediar
 
-  // Calibración simple (Valores ejemplo, el usuario debe calibrar)
-  // Asumimos que menor pulseWidth = mayor intensidad
+  for(int i=0; i<muestras; i++) {
+    // Leer Rojo
+    digitalWrite(S2, LOW); digitalWrite(S3, LOW);
+    totalR += pulseIn(SENSOR_OUT, LOW);
+    
+    // Leer Verde
+    digitalWrite(S2, HIGH); digitalWrite(S3, HIGH);
+    totalG += pulseIn(SENSOR_OUT, LOW);
+    
+    // Leer Azul
+    digitalWrite(S2, LOW); digitalWrite(S3, HIGH);
+    totalB += pulseIn(SENSOR_OUT, LOW);
+    
+    delay(5); // Pequeña pausa entre muestras
+  }
+
+  // Calcular promedios
+  int redPW = totalR / muestras;
+  int greenPW = totalG / muestras;
+  int bluePW = totalB / muestras;
+
+  Serial.print("Promedio -> R:"); Serial.print(redPW);
+  Serial.print(" G:"); Serial.print(greenPW);
+  Serial.print(" B:"); Serial.println(bluePW);
+
+  // --- LÓGICA DE DECISIÓN ---
+  // Ajusta estos valores según tus pruebas. 
+  // Generalmente: El valor más bajo es el color detectado.
   
-  if (redPW < greenPW && redPW < bluePW && redPW < 100) {
+  if (redPW < greenPW && redPW < bluePW && redPW < 400) {
     return "ROJO";
   }
-  if (greenPW < redPW && greenPW < bluePW && greenPW < 100) {
+  if (greenPW < redPW && greenPW < bluePW && greenPW < 400) {
     return "VERDE";
   }
-  if (bluePW < redPW && bluePW < greenPW && bluePW < 100) {
+  if (bluePW < redPW && bluePW < greenPW && bluePW < 400) {
     return "AZUL";
   }
   
@@ -214,7 +260,7 @@ void sendDataToSupabase(String color) {
   if (WiFi.status() == WL_CONNECTED) {
     HTTPClient http;
     
-    // 1. Insertar en tabla 'lecturas'
+    // A. Insertar en tabla 'lecturas' (Historial)
     String urlLecturas = String(supabase_url) + "/rest/v1/lecturas";
     http.begin(urlLecturas);
     http.addHeader("apikey", supabase_key);
@@ -226,7 +272,13 @@ void sendDataToSupabase(String color) {
     int httpCode = http.POST(jsonLectura);
     http.end();
     
-    // 2. Llamar RPC 'incrementar_contador'
+    if (httpCode == 201) {
+      Serial.println("Lectura guardada en DB.");
+    } else {
+      Serial.print("Error guardando lectura: "); Serial.println(httpCode);
+    }
+    
+    // B. Llamar RPC 'incrementar_contador' (Contadores en tiempo real)
     String urlRpc = String(supabase_url) + "/rest/v1/rpc/incrementar_contador";
     http.begin(urlRpc);
     http.addHeader("apikey", supabase_key);
@@ -234,7 +286,13 @@ void sendDataToSupabase(String color) {
     http.addHeader("Content-Type", "application/json");
     
     String jsonRpc = "{\"p_turno\":\"" + turnoActual + "\", \"p_color\":\"" + color + "\"}";
-    http.POST(jsonRpc);
+    int rpcCode = http.POST(jsonRpc);
     http.end();
+    
+    if (rpcCode == 200 || rpcCode == 204) {
+      Serial.println("Contador incrementado.");
+    } else {
+      Serial.print("Error RPC: "); Serial.println(rpcCode);
+    }
   }
 }

@@ -350,7 +350,7 @@
                 .is('fin', null)
                 .order('inicio', { ascending: false })
                 .limit(1)
-                .single();
+                .maybeSingle(); // Changed from single() to maybeSingle() to avoid 406 error
 
             if (session) {
                 currentSessionId = session.id;
@@ -375,8 +375,8 @@
                 currentSessionId = data.id;
                 sessionStartTime = new Date(data.inicio);
 
-                // 2. Turn ON System & Set Turn
-                await supabaseClient.from('sistema').update({ encendido: true, turno_actual: selectedTurn }).eq('id', 1);
+                // 2. Set Turn (but DO NOT auto-start motor)
+                await supabaseClient.from('sistema').update({ turno_actual: selectedTurn }).eq('id', 1);
 
                 setSessionActiveUI(true);
             }
@@ -394,8 +394,8 @@
                 })
                 .eq('id', currentSessionId);
 
-            // 2. Turn OFF System
-            await supabaseClient.from('sistema').update({ encendido: false }).eq('id', 1);
+            // 2. DO NOT auto-stop motor
+            // await supabaseClient.from('sistema').update({ encendido: false }).eq('id', 1);
 
             currentSessionId = null;
             sessionStartTime = null;
@@ -438,7 +438,7 @@
 
         // --- UI Updates ---
         function updateSystemUI(isOn) {
-            // systemToggle.checked = isOn; // Removed direct toggle control
+            systemToggle.checked = isOn; // Sync checkbox with DB state
             if (isOn) {
                 motorStatusBadge.className = "inline-flex items-center rounded-full bg-accent-green/10 px-3 py-1 text-sm font-semibold text-accent-green";
                 motorStatusBadge.textContent = "ON";
@@ -532,13 +532,19 @@
         btnStartShift.addEventListener('click', startShift);
         btnEndShift.addEventListener('click', endShift);
 
-        // Removed direct toggle listener and radio listeners as they are now controlled by Start/End Shift logic
-        // But we might want to update the 'turno_actual' locally if user clicks radio BEFORE starting shift?
-        // Yes, let's allow selecting turn before starting.
+        // Manual Motor Control
+        systemToggle.addEventListener('change', async (e) => {
+            const isOn = e.target.checked;
+            await supabaseClient.from('sistema').update({ encendido: isOn }).eq('id', 1);
+        });
+
+        // Updated listener to fetch counts when switching turns
         for (const radio of shiftRadios) {
             radio.addEventListener('change', (e) => {
-                // Just update local variable, don't send to DB until Start Shift
-                // Or maybe we do nothing and just read the checked radio on Start
+                if (!currentSessionId) {
+                    currentTurn = e.target.value;
+                    fetchCounts();
+                }
             });
         }
 
